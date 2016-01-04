@@ -16,7 +16,7 @@ if ( ! defined( 'ABSPATH' ) ) exit;
  * Is Test Mode
  *
  * @since 1.0
- * @return bool $ret True if return mode is enabled, false otherwise
+ * @return bool $ret True if test mode is enabled, false otherwise
  */
 function edd_is_test_mode() {
 	$ret = edd_get_option( 'test_mode', false );
@@ -430,11 +430,24 @@ function edd_get_php_arg_separator_output() {
  */
 function edd_get_current_page_url( $nocache = false ) {
 
+	global $wp;
+
+	if( get_option( 'permalink_structure' ) ) {
+
+		$base = trailingslashit( home_url( $wp->request ) );
+
+	} else {
+
+		$base = add_query_arg( $wp->query_string, '', trailingslashit( home_url( $wp->request ) ) );
+		$base = remove_query_arg( array( 'post_type', 'name' ), $base );
+
+	}
+
 	$scheme = is_ssl() ? 'https' : 'http';
-	$uri    = esc_url( site_url( $_SERVER['REQUEST_URI'], $scheme ) );
+	$uri    = set_url_scheme( $base, $scheme );
 
 	if ( is_front_page() ) {
-		$uri = home_url();
+		$uri = home_url( '/' );
 	} elseif ( edd_is_checkout( array(), false ) ) {
 		$uri = edd_get_checkout_uri();
 	}

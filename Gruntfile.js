@@ -60,21 +60,6 @@ grunt.initConfig({
 						pot.headers['last-translator'] = 'WP-Translations (http://wp-translations.org/)';
 						pot.headers['language-team'] = 'WP-Translations <wpt@wp-translations.org>';
 						pot.headers['language'] = 'en_US';
-						var translation, // Exclude meta data from pot.
-							excluded_meta = [
-								'Plugin Name of the plugin/theme',
-								'Plugin URI of the plugin/theme',
-								'Author of the plugin/theme',
-								'Author URI of the plugin/theme'
-								];
-									for ( translation in pot.translations[''] ) {
-										if ( 'undefined' !== typeof pot.translations[''][ translation ].comments.extracted ) {
-											if ( excluded_meta.indexOf( pot.translations[''][ translation ].comments.extracted ) >= 0 ) {
-												console.log( 'Excluded meta: ' + pot.translations[''][ translation ].comments.extracted );
-													delete pot.translations[''][ translation ];
-												}
-											}
-										}
 						return pot;
 					}
 				}
@@ -97,7 +82,7 @@ grunt.initConfig({
 		potomo: {
 			dist: {
 				options: {
-					poDel: true
+					poDel: false
 				},
 				files: [{
 					expand: true,

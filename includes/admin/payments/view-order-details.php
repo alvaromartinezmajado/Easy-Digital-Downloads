@@ -77,6 +77,18 @@ $currency_code  = $payment->currency;
 														<option value="<?php echo esc_attr( $key ); ?>"<?php selected( $payment->status, $key, true ); ?>><?php echo esc_html( $status ); ?></option>
 													<?php endforeach; ?>
 												</select>
+
+												<?php
+												$status_help  = '<ul>';
+												$status_help .= '<li>' . __( '<strong>Pending</strong>: payment is still processing or was abandoned by customer. Successful payments will be marked as Complete automatically once processing is finalized.', 'easy-digital-downloads' ) . '</li>';
+												$status_help .= '<li>' . __( '<strong>Complete</strong>: all processing is completed for this purchase.', 'easy-digital-downloads' ) . '</li>';
+												$status_help .= '<li>' . __( '<strong>Revoked</strong>: access to purchased items is disabled, perhaps due to policy violation or fraud.', 'easy-digital-downloads' ) . '</li>';
+												$status_help .= '<li>' . __( '<strong>Refunded</strong>: the purchase amount is returned to the customer and access to items is disabled.', 'easy-digital-downloads' ) . '</li>';
+												$status_help .= '<li>' . __( '<strong>Abandoned</strong>: the purchase attempt was not completed by the customer.', 'easy-digital-downloads' ) . '</li>';
+												$status_help .= '<li>' . __( '<strong>Failed</strong>: customer clicked Cancel before completing the purchase.', 'easy-digital-downloads' ) . '</li>';
+												$status_help .= '</ul>';
+												?>
+												<span alt="f223" class="edd-help-tip dashicons dashicons-editor-help" title="<?php echo $status_help; ?>"></span>
 											</p>
 										</div>
 
@@ -149,18 +161,30 @@ $currency_code  = $payment->currency;
 								<div class="edd-order-update-box edd-admin-box">
 									<?php do_action( 'edd_view_order_details_update_before', $payment_id ); ?>
 									<div id="major-publishing-actions">
-										<div id="publishing-action">
-											<input type="submit" class="button button-primary right" value="<?php esc_attr_e( 'Save Payment', 'easy-digital-downloads' ); ?>"/>
-											<?php if( edd_is_payment_complete( $payment_id ) ) : ?>
-												<a href="<?php echo add_query_arg( array( 'edd-action' => 'email_links', 'purchase_id' => $payment_id ) ); ?>" id="edd-resend-receipt" class="button-secondary right"><?php _e( 'Resend Receipt', 'easy-digital-downloads' ); ?></a>
-											<?php endif; ?>
+										<div id="delete-action">
+											<a href="<?php echo wp_nonce_url( add_query_arg( array( 'edd-action' => 'delete_payment', 'purchase_id' => $payment_id ), admin_url( 'edit.php?post_type=download&page=edd-payment-history' ) ), 'edd_payment_nonce' ) ?>" class="edd-delete-payment edd-delete"><?php _e( 'Delete Payment', 'easy-digital-downloads' ); ?></a>
 										</div>
+										<input type="submit" class="button button-primary right" value="<?php esc_attr_e( 'Save Payment', 'easy-digital-downloads' ); ?>"/>
 										<div class="clear"></div>
 									</div>
 									<?php do_action( 'edd_view_order_details_update_after', $payment_id ); ?>
 								</div><!-- /.edd-order-update-box -->
 
 							</div><!-- /#edd-order-data -->
+
+							<div id="edd-order-resend-receipt" class="postbox edd-order-data">
+								<div class="inside">
+									<div class="edd-order-resend-receipt-box edd-admin-box">
+									<?php do_action( 'edd_view_order_details_resend_receipt_before', $payment_id ); ?>
+										<?php if( edd_is_payment_complete( $payment_id ) ) : ?>
+											<a href="<?php echo add_query_arg( array( 'edd-action' => 'email_links', 'purchase_id' => $payment_id ) ); ?>" id="edd-resend-receipt" class="button-secondary alignleft"><?php _e( 'Resend Receipt', 'easy-digital-downloads' ); ?></a>
+											<span alt="f223" class="edd-help-tip dashicons dashicons-editor-help" title="<?php _e( '<strong>Resend Receipt</strong>: This will send a new copy of the purchase receipt to the customer&#8217;s email address. If download URLs are included in the receipt, new file download URLs will also be included with the receipt.', 'easy-digital-downloads' ); ?>"></span>
+										<?php endif; ?>
+										<div class="clear"></div>
+										<?php do_action( 'edd_view_order_details_resend_receipt_after', $payment_id ); ?>
+									</div><!-- /.edd-order-resend-receipt-box -->
+								</div>
+							</div>
 
 							<div id="edd-order-details" class="postbox edd-order-data">
 
@@ -207,9 +231,10 @@ $currency_code  = $payment->currency;
 
 										<div class="edd-unlimited-downloads edd-admin-box-inside">
 											<p>
-												<span class="label" title="<?php _e( 'Grants the customer unlimited file downloads for this purchase, regardless of other limits set.', 'easy-digital-downloads' ); ?>"><i data-code="f316" class="dashicons dashicons-download"></i></span>&nbsp;
+												<span class="label"><i data-code="f316" class="dashicons dashicons-download"></i></span>&nbsp;
 												<input type="checkbox" name="edd-unlimited-downloads" id="edd_unlimited_downloads" value="1"<?php checked( true, $unlimited, true ); ?>/>
 												<label class="description" for="edd_unlimited_downloads"><?php _e( 'Unlimited file downloads', 'easy-digital-downloads' ); ?></label>
+												<span alt="f223" class="edd-help-tip dashicons dashicons-editor-help" title="<?php _e( '<strong>Unlimited file downloads</strong>: checking this box will override all other file download limits for this purchase, granting the customer unliimited downloads of all files included on the purchase.', 'easy-digital-downloads' ); ?>"></span>
 											</p>
 										</div>
 
@@ -408,10 +433,10 @@ $currency_code  = $payment->currency;
 										<div class="column">
 											<?php if( ! empty( $customer->id ) ) : ?>
 												<?php $customer_url = admin_url( 'edit.php?post_type=download&page=edd-customers&view=overview&id=' . $customer->id ); ?>
-												<a href="<?php echo $customer_url; ?>" title="<?php _e( 'View Customer Details', 'easy-digital-downloads' ); ?>"><?php _e( 'View Customer Details', 'easy-digital-downloads' ); ?></a>
+												<a href="<?php echo $customer_url; ?>"><?php _e( 'View Customer Details', 'easy-digital-downloads' ); ?></a>
 												&nbsp;|&nbsp;
 											<?php endif; ?>
-											<a href="#new" class="edd-payment-new-customer" title="<?php _e( 'New Customer', 'easy-digital-downloads' ); ?>"><?php _e( 'New Customer', 'easy-digital-downloads' ); ?></a>
+											<a href="#new" class="edd-payment-new-customer"><?php _e( 'New Customer', 'easy-digital-downloads' ); ?></a>
 										</div>
 									</div>
 
@@ -564,4 +589,4 @@ $currency_code  = $payment->currency;
 	<?php do_action( 'edd_view_order_details_after', $payment_id ); ?>
 </div><!-- /.wrap -->
 
-<div id="edd-download-link" title="<?php _e( 'Copy Download Link(s)', 'easy-digital-downloads' ); ?>"></div>
+<div id="edd-download-link"></div>

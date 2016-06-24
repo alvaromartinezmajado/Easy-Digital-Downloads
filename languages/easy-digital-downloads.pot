@@ -4,7 +4,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: Easy Digital Downloads 2.6\n"
 "Report-Msgid-Bugs-To: https://easydigitaldownloads.com/\n"
-"POT-Creation-Date: 2016-06-23 16:41:55+00:00\n"
+"POT-Creation-Date: 2016-06-24 08:00:30+00:00\n"
 "MIME-Version: 1.0\n"
 "Content-Type: text/plain; charset=utf-8\n"
 "Content-Transfer-Encoding: 8bit\n"
@@ -2740,6 +2740,10 @@ msgstr ""
 #: includes/admin/reporting/pdf-reports.php:44
 #: includes/admin/reporting/pdf-reports.php:55
 msgid "Sales and earnings reports for the current year for all products"
+msgstr ""
+
+#. Plugin Name of the plugin/theme
+msgid "Easy Digital Downloads"
 msgstr ""
 
 #: includes/admin/reporting/pdf-reports.php:60
@@ -7762,8 +7766,16 @@ msgstr ""
 msgid "Number of items in cart"
 msgstr ""
 
+#. Author URI of the plugin/theme
+msgid "https://easydigitaldownloads.com"
+msgstr ""
+
 #. Description of the plugin/theme
 msgid "The easiest way to sell digital products with WordPress."
+msgstr ""
+
+#. Author of the plugin/theme
+msgid "Pippin Williamson and Company"
 msgstr ""
 
 #: includes/admin/payments/view-order-details.php:493

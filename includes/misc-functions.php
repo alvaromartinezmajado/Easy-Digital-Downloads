@@ -173,7 +173,12 @@ function edd_get_ip() {
 	} elseif( ! empty( $_SERVER['REMOTE_ADDR'] ) ) {
 		$ip = $_SERVER['REMOTE_ADDR'];
 	}
-	return apply_filters( 'edd_get_ip', $ip );
+
+	// Fix potential CSV returned from $_SERVER variables
+	$ip_array = explode( ',', $ip );
+	$ip_array = array_map( 'trim', $ip_array );
+
+	return apply_filters( 'edd_get_ip', $ip_array[0] );
 }
 
 
@@ -448,7 +453,7 @@ function edd_get_current_page_url( $nocache = false ) {
 
 	if ( is_front_page() ) {
 		$uri = home_url( '/' );
-	} elseif ( edd_is_checkout( array(), false ) ) {
+	} elseif ( edd_is_checkout() ) {
 		$uri = edd_get_checkout_uri();
 	}
 
@@ -747,6 +752,12 @@ function edd_object_to_array( $object = array() ) {
 			$return = $object->array_convert();
 		} else {
 			$return = get_object_vars( $object );
+
+			// Now look at the items that came back and convert any nested objects to arrays
+			foreach ( $return as $key => $value ) {
+				$value = ( is_array( $value ) || is_object( $value ) ) ? edd_object_to_array( $value ) : $value;
+				$return[ $key ] = $value;
+			}
 		}
 	}
 

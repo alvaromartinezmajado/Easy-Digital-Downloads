@@ -22,6 +22,23 @@ function edd_get_cart_contents() {
 	$cart = EDD()->session->get( 'edd_cart' );
 	$cart = ! empty( $cart ) ? array_values( $cart ) : array();
 
+	$cart_count       = count( $cart );
+
+	foreach ( $cart as $key => $item ) {
+		$download = new EDD_Download( $item['id'] );
+
+		// If the item is not a download or it's status has changed since it was added to the cart.
+		if ( empty( $download->ID ) || ! $download->can_purchase() ) {
+			unset( $cart[ $key ] );
+		}
+
+	}
+
+	// We've removed items, reset the cart session
+	if ( count( $cart ) < $cart_count ) {
+		EDD()->session->set( 'edd_cart', $cart );
+	}
+
 	return apply_filters( 'edd_cart_contents', $cart );
 }
 
@@ -77,7 +94,7 @@ function edd_get_cart_content_details() {
 
 		$total      = $subtotal - $discount + $tax;
 
-		// Do not allow totals to go negatve
+		// Do not allow totals to go negative
 		if( $total < 0 ) {
 			$total = 0;
 		}
@@ -139,12 +156,13 @@ function edd_get_cart_quantity() {
  * @return string Cart key of the new item
  */
 function edd_add_to_cart( $download_id, $options = array() ) {
-	$download = get_post( $download_id );
+	$download = new EDD_Download( $download_id );
 
-	if( 'download' != $download->post_type )
+	if( empty( $download->ID ) ) {
 		return; // Not a download product
+	}
 
-	if ( ! current_user_can( 'edit_post', $download->ID ) && $download->post_status != 'publish' ) {
+	if ( ! $download->can_purchase() ) {
 		return; // Do not allow draft/pending to be purchased if can't edit. Fixes #1056
 	}
 
@@ -181,6 +199,8 @@ function edd_add_to_cart( $download_id, $options = array() ) {
 		$options['price_id'] = explode( ',', $options['price_id'] );
 	}
 
+	$items = array();
+
 	if ( isset( $options['price_id'] ) && is_array( $options['price_id'] ) ) {
 
 		// Process multiple price options at once
@@ -215,8 +235,10 @@ function edd_add_to_cart( $download_id, $options = array() ) {
 		);
 	}
 
-	foreach ( $items as $item ) {
-		$to_add = apply_filters( 'edd_add_to_cart_item', $item );
+	foreach ( $items as &$item ) {
+		$item = apply_filters( 'edd_add_to_cart_item', $item );
+		$to_add = $item;
+
 		if ( ! is_array( $to_add ) )
 			return;
 
@@ -241,9 +263,11 @@ function edd_add_to_cart( $download_id, $options = array() ) {
 		}
 	}
 
+	unset( $item );
+
 	EDD()->session->set( 'edd_cart', $cart );
 
-	do_action( 'edd_post_add_to_cart', $download_id, $options );
+	do_action( 'edd_post_add_to_cart', $download_id, $options, $items );
 
 	// Clear all the checkout errors, if any
 	edd_clear_errors();

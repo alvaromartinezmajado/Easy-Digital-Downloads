@@ -94,12 +94,12 @@ class EDD_Batch_Payments_Import extends EDD_Batch_Import {
 			foreach( $this->csv->data as $key => $row ) {
 
 				// Skip all rows until we pass our offset
-				if( $key + 1 < $offset ) {
+				if( $key + 1 <= $offset ) {
 					continue;
 				}
 
 				// Done with this batch
-				if( $i >= $this->per_step ) {
+				if( $i > $this->per_step ) {
 					break;
 				}
 
@@ -149,7 +149,11 @@ class EDD_Batch_Payments_Import extends EDD_Batch_Import {
 
 			if( ! strtotime( $date ) ) {
 
-				$date = date( 'Y-n-d H:i:s', current_time( 'timestamp' ) );
+				$date = date( 'Y-m-d H:i:s', current_time( 'timestamp' ) );
+
+			} else {
+
+				$date = date( 'Y-m-d H:i:s', strtotime( $date ) );
 
 			}
 
@@ -522,11 +526,11 @@ class EDD_Batch_Payments_Import extends EDD_Batch_Import {
 
 				$d   = (array) explode( '|', $download );
 				preg_match( '/\{(\d+(\.\d+|\d+))\}/', $d[1], $matches );
-				$price = substr( $d[1], 0, strpos( $d[1], '{' ) );
-				$tax   = isset( $matches[1] ) ? $matches[1] : 0;
+				$price = trim( substr( $d[1], 0, strpos( $d[1], '{' ) ) );
+				$tax   = isset( $matches[1] ) ? trim( $matches[1] ) : 0;
 
 				$d_array[] = array(
-					'download' => $d[0],
+					'download' => trim( $d[0] ),
 					'price'    => $price - $tax,
 					'tax'      => $tax
 				);

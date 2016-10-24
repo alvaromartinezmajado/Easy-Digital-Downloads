@@ -26,7 +26,8 @@ jQuery(document).ready(function ($) {
 			},
 			success: function (response) {
 				if (response.removed) {
-					if ( parseInt( edd_scripts.position_in_cart, 10 ) === parseInt( item, 10 ) ) {
+
+					if ( ( parseInt( edd_scripts.position_in_cart, 10 ) === parseInt( item, 10 ) ) || edd_scripts.has_purchase_links ) {
 						window.location = window.location;
 						return false;
 					}
@@ -111,7 +112,7 @@ jQuery(document).ready(function ($) {
 
 		if( variable_price == 'yes' ) {
 
-			if ( form.find('.edd_price_option_' + download).is('input:hidden') ) {
+			if ( form.find('.edd_price_option_' + download + '[type="hidden"]').length > 0 ) {
 				item_price_ids[0] = $('.edd_price_option_' + download, form).val();
 				if ( form.find('.edd-submit').data('price') && form.find('.edd-submit').data('price') > 0 ) {
 					free_items = false;
@@ -394,7 +395,6 @@ jQuery(document).ready(function ($) {
 					withCredentials: true
 				},
 				success: function (response) {
-console.log( response); console.log(is_checkout);
 					if ( is_checkout ) {
 						$form = $("#edd_purchase_form");
 					} else {

@@ -114,6 +114,8 @@ class EDD_Fees {
 		// Update fees
 		EDD()->session->set( 'edd_cart_fees', $fees );
 
+		do_action( 'edd_post_add_fee', $fees, $key, $args );
+
 		return $fees;
 	}
 
@@ -134,6 +136,8 @@ class EDD_Fees {
 		if ( isset( $fees[ $id ] ) ) {
 			unset( $fees[ $id ] );
 			EDD()->session->set( 'edd_cart_fees', $fees );
+
+			do_action( 'edd_post_remove_fee', $fees, $id );
 		}
 
 		return $fees;
@@ -215,6 +219,10 @@ class EDD_Fees {
 
 			// Remove fees that don't belong to the specified Download AND Price ID
 			foreach( $fees as $key => $fee ) {
+
+				if( is_null( $fee['price_id'] ) ) {
+					continue;
+				}
 
 				if ( (int) $price_id !== (int) $fee['price_id'] ){
 
@@ -327,9 +335,17 @@ class EDD_Fees {
 	 * @return array Return the payment meta with the fees added
 	*/
 	public function record_fees( $payment_meta, $payment_data ) {
+
 		if ( $this->has_fees( 'all' ) ) {
+
 			$payment_meta['fees'] = $this->get_fees( 'all' );
-			EDD()->session->set( 'edd_cart_fees', null );
+
+			// Only clear fees from session when status is not pending
+			if( ! empty( $payment_data['status'] ) && 'pending' !== strtolower( $payment_data['status'] ) ) {
+
+				EDD()->session->set( 'edd_cart_fees', null );
+
+			}
 		}
 
 		return $payment_meta;

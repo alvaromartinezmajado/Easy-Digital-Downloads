@@ -79,12 +79,12 @@ class EDD_Batch_Downloads_Import extends EDD_Batch_Import {
 			foreach( $this->csv->data as $key => $row ) {
 
 				// Skip all rows until we pass our offset
-				if( $key + 1 < $offset ) {
+				if( $key + 1 <= $offset ) {
 					continue;
 				}
 
 				// Done with this batch
-				if( $i >= $this->per_step ) {
+				if( $i > $this->per_step ) {
 					break;
 				}
 
@@ -104,6 +104,38 @@ class EDD_Batch_Downloads_Import extends EDD_Batch_Import {
 					if( ! empty( $this->field_mapping[ $key ] ) && ! empty( $row[ $this->field_mapping[ $key ] ] ) ) {
 						$args[ $key ] = $row[ $this->field_mapping[ $key ] ];
 					}
+				}
+
+				// Format the date properly
+				if ( ! empty( $args['post_date'] ) ) {
+
+					$timestamp = strtotime( $args['post_date'], current_time( 'timestamp' ) );
+					$date      = date( 'Y-m-d H:i:s', $timestamp );
+
+					// If the date provided results in a date string, use it, or just default to today so it imports
+					if ( ! empty( $date ) ) {
+						$args['post_date'] = $date;
+					} else {
+						$date = '';
+					}
+
+				}
+
+
+				// Detect any status that could map to `publish`
+				if ( ! empty( $args['post_status'] ) ) {
+
+					$published_statuses = array(
+						'live',
+						'published',
+					);
+
+					$current_status = strtolower( $args['post_status'] );
+
+					if ( in_array( $current_status, $published_statuses ) ) {
+						$args['post_status'] = 'publish';
+					}
+
 				}
 
 				$download_id = wp_insert_post( $args );
@@ -232,6 +264,7 @@ class EDD_Batch_Downloads_Import extends EDD_Batch_Import {
 			if( ! empty( $prices ) ) {
 
 				$variable_prices = array();
+				$price_id        = 1;
 				foreach( $prices as $price ) {
 
 					// See if this matches the EDD Download export for variable prices
@@ -239,7 +272,8 @@ class EDD_Batch_Downloads_Import extends EDD_Batch_Import {
 
 						$price = array_map( 'trim', explode( ':', $price ) );
 
-						$variable_prices[] = array( 'name' => $price[0], 'amount' => $price[1] );
+						$variable_prices[ $price_id ] = array( 'name' => $price[ 0 ], 'amount' => $price[ 1 ] );
+						$price_id++;
 
 					}
 
@@ -267,7 +301,24 @@ class EDD_Batch_Downloads_Import extends EDD_Batch_Import {
 			$download_files = array();
 			foreach( $files as $file ) {
 
-				$download_files[] = array( 'file' => $file, 'name' => basename( $file ) );
+				$condition = '';
+
+				if ( strpos( $file, ';' ) ) {
+					$split_on  = strpos( $file, ';' );
+					$file_url  = substr( $file, 0, $split_on );
+					$condition = substr( $file, $split_on + 1 );
+				}
+
+				$download_file_args = array(
+					'file' => $file_url,
+					'name' => basename( $file_url ),
+				);
+
+				if ( ! empty( $condition ) ) {
+					$download_file_args['condition'] = $condition;
+				}
+
+				$download_files[] = $download_file_args;
 
 			}
 
@@ -426,27 +477,33 @@ class EDD_Batch_Downloads_Import extends EDD_Batch_Import {
 
 			if( is_numeric( $term ) && 0 === (int) $term ) {
 
-				$term = get_term( $term, $taxonomy );
+				$t = get_term( $term, $taxonomy );
 
 			} else {
 
-				$term = get_term_by( 'name', $term, $taxonomy );
+				$t = get_term_by( 'name', $term, $taxonomy );
 
-				if( ! $term ) {
+				if( ! $t ) {
 
-					$term = get_term_by( 'slug', $term, $taxonomy );
+					$t = get_term_by( 'slug', $term, $taxonomy );
 
 				}
 
 			}
 
-			if( ! empty( $term ) ) {
+			if( ! empty( $t ) ) {
 
-				$term_ids[] = $term->term_id;
+				$term_ids[] = $t->term_id;
 
 			} else {
 
-				$term_ids[] = wp_insert_term( $term, $taxonomy );
+				$term_data = wp_insert_term( $term, $taxonomy, array( 'slug' => sanitize_title( $term ) ) );
+
+				if( ! is_wp_error( $term_data ) ) {
+
+					$term_ids[] = $term_data['term_id'];
+
+				}
 
 			}
 

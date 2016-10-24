@@ -309,9 +309,13 @@ class EDD_Download {
 	 */
 	public function get_prices() {
 
-		if( ! isset( $this->prices ) ) {
+		$this->prices = array();
 
-			$this->prices = get_post_meta( $this->ID, 'edd_variable_prices', true );
+		if( true === $this->has_variable_prices() ) {
+
+			if ( empty( $this->prices ) ) {
+				$this->prices = get_post_meta( $this->ID, 'edd_variable_prices', true );
+			}
 
 		}
 
@@ -825,6 +829,24 @@ class EDD_Download {
 		}
 
 		return false;
+	}
+
+	/**
+	 * Checks if the download can be purchased
+	 *
+	 * NOTE: Currently only checks on edd_get_cart_contents() and edd_add_to_cart()
+	 *
+	 * @since  2.6.4
+	 * @return bool If the current user can purcahse the download ID
+	 */
+	public function can_purchase() {
+		$can_purchase = true;
+
+		if ( ! current_user_can( 'edit_post', $this->ID ) && $this->post_status != 'publish' ) {
+			$can_purchase = false;
+		}
+
+		return (bool) apply_filters( 'edd_can_purchase_download', $can_purchase, $this );
 	}
 
 }

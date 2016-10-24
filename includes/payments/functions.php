@@ -152,7 +152,6 @@ function edd_insert_payment( $payment_data = array() ) {
 	$payment->user_info      = $payment_data['user_info'];
 	$payment->gateway        = $gateway;
 	$payment->user_id        = $payment_data['user_info']['id'];
-	$payment->email          = $payment_data['user_email'];
 	$payment->first_name     = $payment_data['user_info']['first_name'];
 	$payment->last_name      = $payment_data['user_info']['last_name'];
 	$payment->email          = $payment_data['user_info']['email'];
@@ -164,12 +163,6 @@ function edd_insert_payment( $payment_data = array() ) {
 
 	if ( isset( $payment_data['post_date'] ) ) {
 		$payment->date = $payment_data['post_date'];
-	}
-
-	if ( edd_get_option( 'enable_sequential' ) ) {
-		$number          = edd_get_next_payment_number();
-		$payment->number = edd_format_payment_number( $number );
-		update_option( 'edd_last_payment_number', $number );
 	}
 
 	// Clear the user's purchased cache
@@ -195,11 +188,17 @@ function edd_insert_payment( $payment_data = array() ) {
  * @param  string $new_status New Payment Status (default: publish)
  * @return bool               If the payment was successfully updated
  */
-function edd_update_payment_status( $payment_id, $new_status = 'publish' ) {
+function edd_update_payment_status( $payment_id = 0, $new_status = 'publish' ) {
 
+	$updated = false;
 	$payment = new EDD_Payment( $payment_id );
-	$payment->status = $new_status;
-	$updated = $payment->save();
+
+	if( $payment && $payment->ID > 0 ) {
+
+		$payment->status = $new_status;
+		$updated = $payment->save();
+
+	}
 
 	return $updated;
 
@@ -335,6 +334,17 @@ function edd_undo_purchase( $download_id = false, $payment_id ) {
 					$amount = edd_get_download_final_price( $item['id'], $user_info, $amount );
 				}
 
+			}
+
+			if ( ! empty( $item['fees'] ) ) {
+				foreach ( $item['fees'] as $fee ) {
+					// Only let negative fees affect the earnings
+					if ( $fee['amount'] > 0 ) {
+						continue;
+					}
+
+					$amount += $fee['amount'];
+				}
 			}
 
 			$maybe_decrease_earnings = apply_filters( 'edd_decrease_earnings_on_undo', true, $payment, $item['id'] );

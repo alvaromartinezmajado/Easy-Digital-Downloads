@@ -24,15 +24,31 @@ function edd_do_automatic_upgrades() {
 	$did_upgrade = false;
 	$edd_version = preg_replace( '/[^0-9.].*/', '', get_option( 'edd_version' ) );
 
-	if( version_compare( $edd_version, EDD_VERSION, '<' ) ) {
+	if( version_compare( $edd_version, '2.6', '<' ) ) {
 
 		edd_v26_upgrades();
+
+	}
+
+	if( version_compare( $edd_version, EDD_VERSION, '<' ) ) {
+
+		// Let us know that an upgrade has happened
 		$did_upgrade = true;
 
 	}
 
 	if( $did_upgrade ) {
+
+		// If it is a major version, send to what's new page
+		if( substr_count( EDD_VERSION, '.' ) < 2 ) {
+			set_transient( '_edd_activation_redirect', true, 30 );
+		}
+
 		update_option( 'edd_version', preg_replace( '/[^0-9.].*/', '', EDD_VERSION ) );
+
+		// Send a check in. Note: this only sends if data tracking has been enabled
+		$tracking = new EDD_Tracking;
+		$tracking->send_checkin( false, true );
 	}
 
 }
@@ -388,7 +404,7 @@ function edd_v14_upgrades() {
 	/** Add [edd_receipt] to success page **/
 	$success_page = get_post( $edd_options['success_page'] );
 
-	// Check for the [edd_receipt] short code and add it if not present
+	// Check for the [edd_receipt] shortcode and add it if not present
 	if( strpos( $success_page->post_content, '[edd_receipt' ) === false ) {
 		$page_content = $success_page->post_content .= "\n[edd_receipt]";
 		wp_update_post( array( 'ID' => $edd_options['success_page'], 'post_content' => $page_content ) );

@@ -50,7 +50,7 @@ function edd_install( $network_wide = false ) {
 register_activation_hook( EDD_PLUGIN_FILE, 'edd_install' );
 
 /**
- * Run the EDD Instsall process
+ * Run the EDD Install process
  *
  * @since  2.5
  * @return void
@@ -331,8 +331,9 @@ function edd_install_roles_on_network() {
 	if( ! is_object( $wp_roles ) ) {
 		return;
 	}
+	
 
-	if( ! array_key_exists( 'shop_manager', $wp_roles->roles ) ) {
+	if( empty( $wp_roles->roles ) || ! array_key_exists( 'shop_manager', $wp_roles->roles ) ) {
 
 		// Create EDD shop roles
 		$roles = new EDD_Roles;

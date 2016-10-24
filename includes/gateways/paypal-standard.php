@@ -262,8 +262,9 @@ function edd_process_paypal_purchase( $purchase_data ) {
 					$paypal_args['quantity_' . $i ]  = '1';
 					$paypal_args['amount_' . $i ]    = edd_sanitize_amount( $fee['amount'] );
 					$i++;
-				} else {
-					// This is a negative fee (discount)
+				} else if ( empty( $fee['download_id'] ) ) {
+
+					// This is a negative fee (discount) not assigned to a specific Download
 					$discounted_amount += abs( $fee['amount'] );
 				}
 			}
@@ -777,7 +778,9 @@ add_filter( 'edd_get_payment_transaction_id-paypal', 'edd_paypal_get_payment_tra
  */
 function edd_paypal_link_transaction_id( $transaction_id, $payment_id ) {
 
-	$paypal_base_url = 'https://www.paypal.com/webscr?cmd=_history-details-from-hub&id=';
+	$payment = new EDD_Payment( $payment_id );
+	$sandbox = 'test' == $payment->mode ? 'sandbox.' : '';
+	$paypal_base_url = 'https://www.' . $sandbox . 'paypal.com/webscr?cmd=_history-details-from-hub&id=';
 	$transaction_url = '<a href="' . esc_url( $paypal_base_url . $transaction_id ) . '" target="_blank">' . $transaction_id . '</a>';
 
 	return apply_filters( 'edd_paypal_link_payment_details_transaction_id', $transaction_url );

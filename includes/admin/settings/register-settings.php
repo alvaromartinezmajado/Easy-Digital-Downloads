@@ -82,7 +82,7 @@ function edd_update_option( $key = '', $value = false ) {
  * @since 2.3
  * @param string $key The Key to delete
  * @global $edd_options Array of all the EDD Options
- * @return boolean True if updated, false if not.
+ * @return boolean True if removed, false if not.
  */
 function edd_delete_option( $key = '' ) {
 
@@ -180,33 +180,33 @@ function edd_register_settings() {
 					continue;
 				}
 
-				$name = isset( $option['name'] ) ? $option['name'] : '';
+				$args = wp_parse_args( $option, array(
+				    'section'       => $section,
+				    'id'            => null,
+				    'desc'          => '',
+				    'name'          => '',
+				    'size'          => null,
+				    'options'       => '',
+				    'std'           => '',
+				    'min'           => null,
+				    'max'           => null,
+				    'step'          => null,
+				    'chosen'        => null,
+				    'placeholder'   => null,
+				    'allow_blank'   => true,
+				    'readonly'      => false,
+				    'faux'          => false,
+				    'tooltip_title' => false,
+				    'tooltip_desc'  => false,
+				) );
 
 				add_settings_field(
-					'edd_settings[' . $option['id'] . ']',
-					$name,
-					function_exists( 'edd_' . $option['type'] . '_callback' ) ? 'edd_' . $option['type'] . '_callback' : 'edd_missing_callback',
+					'edd_settings[' . $args['id'] . ']',
+					$args['name'],
+					function_exists( 'edd_' . $args['type'] . '_callback' ) ? 'edd_' . $args['type'] . '_callback' : 'edd_missing_callback',
 					'edd_settings_' . $tab . '_' . $section,
 					'edd_settings_' . $tab . '_' . $section,
-					array(
-						'section'       => $section,
-						'id'            => isset( $option['id'] )            ? $option['id']            : null,
-						'desc'          => ! empty( $option['desc'] )        ? $option['desc']          : '',
-						'name'          => isset( $option['name'] )          ? $option['name']          : null,
-						'size'          => isset( $option['size'] )          ? $option['size']          : null,
-						'options'       => isset( $option['options'] )       ? $option['options']       : '',
-						'std'           => isset( $option['std'] )           ? $option['std']           : '',
-						'min'           => isset( $option['min'] )           ? $option['min']           : null,
-						'max'           => isset( $option['max'] )           ? $option['max']           : null,
-						'step'          => isset( $option['step'] )          ? $option['step']          : null,
-						'chosen'        => isset( $option['chosen'] )        ? $option['chosen']        : null,
-						'placeholder'   => isset( $option['placeholder'] )   ? $option['placeholder']   : null,
-						'allow_blank'   => isset( $option['allow_blank'] )   ? $option['allow_blank']   : true,
-						'readonly'      => isset( $option['readonly'] )      ? $option['readonly']      : false,
-						'faux'          => isset( $option['faux'] )          ? $option['faux']          : false,
-						'tooltip_title' => isset( $option['tooltip_title'] ) ? $option['tooltip_title'] : false,
-						'tooltip_desc'  => isset( $option['tooltip_desc'] )  ? $option['tooltip_desc']  : false,
-					)
+					$args
 				);
 			}
 		}
@@ -247,7 +247,7 @@ function edd_get_registered_settings() {
 					'purchase_page' => array(
 						'id'          => 'purchase_page',
 						'name'        => __( 'Checkout Page', 'easy-digital-downloads' ),
-						'desc'        => __( 'This is the checkout page where buyers will complete their purchases. The [download_checkout] short code must be on this page.', 'easy-digital-downloads' ),
+						'desc'        => __( 'This is the checkout page where buyers will complete their purchases. The [download_checkout] shortcode must be on this page.', 'easy-digital-downloads' ),
 						'type'        => 'select',
 						'options'     => edd_get_pages(),
 						'chosen'      => true,
@@ -256,7 +256,7 @@ function edd_get_registered_settings() {
 					'success_page' => array(
 						'id'          => 'success_page',
 						'name'        => __( 'Success Page', 'easy-digital-downloads' ),
-						'desc'        => __( 'This is the page buyers are sent to after completing their purchases. The [edd_receipt] short code should be on this page.', 'easy-digital-downloads' ),
+						'desc'        => __( 'This is the page buyers are sent to after completing their purchases. The [edd_receipt] shortcode should be on this page.', 'easy-digital-downloads' ),
 						'type'        => 'select',
 						'options'     => edd_get_pages(),
 						'chosen'      => true,
@@ -274,7 +274,16 @@ function edd_get_registered_settings() {
 					'purchase_history_page' => array(
 						'id'          => 'purchase_history_page',
 						'name'        => __( 'Purchase History Page', 'easy-digital-downloads' ),
-						'desc'        => __( 'This page shows a complete purchase history for the current user, including download links. The [purchase_history] short code should be on this page.', 'easy-digital-downloads' ),
+						'desc'        => __( 'This page shows a complete purchase history for the current user, including download links. The [purchase_history] shortcode should be on this page.', 'easy-digital-downloads' ),
+						'type'        => 'select',
+						'options'     => edd_get_pages(),
+						'chosen'      => true,
+						'placeholder' => __( 'Select a page', 'easy-digital-downloads' ),
+					),
+					'login_redirect_page' => array(
+						'id'          => 'login_redirect_page',
+						'name'        => __( 'Login Redirect Page', 'easy-digital-downloads' ),
+						'desc'        => __( 'This is the page where buyers will be redirected by default once they log in. The [edd_login redirect="'.trailingslashit( home_url() ).'"] shortcode with the redirect attribute can override this setting.', 'easy-digital-downloads' ),
 						'type'        => 'select',
 						'options'     => edd_get_pages(),
 						'chosen'      => true,
@@ -711,10 +720,10 @@ function edd_get_registered_settings() {
 					),
 					'logged_in_only' => array(
 						'id'   => 'logged_in_only',
-						'name' => __( 'Disable Guest Checkout', 'easy-digital-downloads' ),
+						'name' => __( 'Require Login', 'easy-digital-downloads' ),
 						'desc' => __( 'Require that users be logged-in to purchase files.', 'easy-digital-downloads' ),
 						'type' => 'checkbox',
-						'tooltip_title' => __( 'Disabling Guest Checkout', 'easy-digital-downloads' ),
+						'tooltip_title' => __( 'Require Login', 'easy-digital-downloads' ),
 						'tooltip_desc'  => __( 'You can require that customers create and login to user accounts prior to purchasing from your store by enabling this option. When unchecked, users can purchase without being logged in by using their name and email address.', 'easy-digital-downloads' ),
 					),
 					'show_register_form' => array(
@@ -910,88 +919,113 @@ function edd_get_registered_settings() {
  * @return string $input Sanitizied value
  */
 function edd_settings_sanitize( $input = array() ) {
-
 	global $edd_options;
 
-	if ( empty( $_POST['_wp_http_referer'] ) ) {
-		// If we didn't get the referer, just return the settings with nothing changed
-		return $edd_options;
+	$doing_section = false;
+	if ( ! empty( $_POST['_wp_http_referer'] ) ) {
+		$doing_section = true;
 	}
 
-	parse_str( $_POST['_wp_http_referer'], $referrer );
+	$setting_types = edd_get_registered_settings_types();
+	$input         = $input ? $input : array();
 
-	$settings = edd_get_registered_settings();
-	$tab      = isset( $referrer['tab'] ) ? $referrer['tab'] : 'general';
-	$section  = isset( $referrer['section'] ) ? $referrer['section'] : 'main';
+	if ( $doing_section ) {
 
-	$input = $input ? $input : array();
+		parse_str( $_POST['_wp_http_referer'], $referrer ); // Pull out the tab and section
+		$tab      = isset( $referrer['tab'] ) ? $referrer['tab'] : 'general';
+		$section  = isset( $referrer['section'] ) ? $referrer['section'] : 'main';
 
-	// Run a general sanitization for the tab for special fields (like taxes)
-	$input = apply_filters( 'edd_settings_' . $tab . '_sanitize', $input );
-
-	// Run a general sanitization for the section so custom tabs with sub-sections can save special data
-	$input = apply_filters( 'edd_settings_' . $tab . '-' . $section . '_sanitize', $input );
-
-	if ( 'main' === $section && empty( $settings[ $tab ]['main'] ) )  {
-		// Check for extensions that aren't using new sections
+		// Run a general sanitization for the tab for special fields (like taxes)
 		$input = apply_filters( 'edd_settings_' . $tab . '_sanitize', $input );
 
-		$settings[ $tab ]['main'] = array();
-		foreach ( $settings[ $tab ] as $key => $setting ) {
-			if ( is_int( $key ) ) {
-				$settings[ $tab ]['main'][ $setting[ 'id' ] ] = $setting;
-				unset( $settings[ $tab ][ $key ]);
-			}
+		// Run a general sanitization for the section so custom tabs with sub-sections can save special data
+		$input = apply_filters( 'edd_settings_' . $tab . '-' . $section . '_sanitize', $input );
 
-			// Check for an override on the section for when main is empty
-			if ( ! empty( $_POST['edd_section_override'] ) ) {
-				$section = sanitize_text_field( $_POST['edd_section_override'] );
-			}
-		}
-	}
-
-	// Loop through each setting being saved and pass it through a sanitization filter
-	foreach ( $input as $key => $value ) {
-
-		// Get the setting type (checkbox, select, etc)
-		$type = isset( $settings[ $tab ][ $section ][ $key ]['type'] ) ? $settings[ $tab ][ $section ][ $key ]['type'] : false;
-
-		if ( $type ) {
-			// Field type specific filter
-			$input[$key] = apply_filters( 'edd_settings_sanitize_' . $type, $value, $key );
-		}
-
-		// General filter
-		$input[ $key ] = apply_filters( 'edd_settings_sanitize', $input[ $key ], $key );
-	}
-
-	// Loop through the whitelist and unset any that are empty for the tab being saved
-	$main_settings    = $section == 'main' ? $settings[ $tab ]['main'] : array(); // Check for extensions that aren't using new sections
-	$section_settings = ! empty( $settings[ $tab ][ $section ] ) ? $settings[ $tab ][ $section ] : array();
-
-	$found_settings   = array_merge( $main_settings, $section_settings );
-
-	if ( ! empty( $found_settings ) ) {
-		foreach ( $found_settings as $key => $value ) {
-
-			// settings used to have numeric keys, now they have keys that match the option ID. This ensures both methods work
-			if ( is_numeric( $key ) ) {
-				$key = $value['id'];
-			}
-
-			if ( empty( $input[ $key ] ) ) {
-				unset( $edd_options[ $key ] );
-			}
-
-		}
 	}
 
 	// Merge our new settings with the existing
 	$output = array_merge( $edd_options, $input );
 
-	add_settings_error( 'edd-notices', '', __( 'Settings updated.', 'easy-digital-downloads' ), 'updated' );
+	foreach ( $setting_types as $key => $type ) {
+
+		if ( empty( $type ) ) {
+			continue;
+		}
+
+		// Some setting types are not actually settings, just keep moving along here
+		$non_setting_types = apply_filters( 'edd_non_setting_types', array(
+			'header', 'descriptive_text', 'hook',
+		) );
+
+		if ( in_array( $type, $non_setting_types ) ) {
+			continue;
+		}
+
+		if ( array_key_exists( $key, $output ) ) {
+			$output[ $key ] = apply_filters( 'edd_settings_sanitize_' . $type, $output[ $key ], $key );
+			$output[ $key ] = apply_filters( 'edd_settings_sanitize', $output[ $key ], $key );
+		}
+
+		if ( $doing_section ) {
+			switch( $type ) {
+				case 'checkbox':
+				case 'gateways':
+				case 'multicheck':
+				case 'payment_icons':
+					if ( array_key_exists( $key, $input ) && $output[ $key ] === '-1' ) {
+						unset( $output[ $key ] );
+					}
+					break;
+				default:
+					if ( array_key_exists( $key, $input ) && empty( $input[ $key ] ) ) {
+						unset( $output[ $key ] );
+					}
+					break;
+			}
+		} else {
+			if ( empty( $input[ $key ] ) ) {
+				unset( $output[ $key ] );
+			}
+		}
+
+	}
+
+	if ( $doing_section ) {
+		add_settings_error( 'edd-notices', '', __( 'Settings updated.', 'easy-digital-downloads' ), 'updated' );
+	}
 
 	return $output;
+}
+
+/**
+ * Flattens the set of registered settings and their type so we can easily sanitize all the settings
+ * in a much cleaner set of logic in edd_settings_sanitize
+ *
+ * @since  2.6.5
+ * @return array Key is the setting ID, value is the type of setting it is registered as
+ */
+function edd_get_registered_settings_types() {
+	$settings      = edd_get_registered_settings();
+	$setting_types = array();
+
+	foreach ( $settings as $tab ) {
+
+		foreach ( $tab as $section_or_setting ) {
+
+			// See if we have a setting registered at the tab level for backwards compatibility
+			if ( is_array( $section_or_setting ) && array_key_exists( 'type', $section_or_setting ) ) {
+				$setting_types[ $section_or_setting['id'] ] = $section_or_setting['type'];
+				continue;
+			}
+
+			foreach ( $section_or_setting as $section => $section_settings ) {
+				$setting_types[ $section_settings['id'] ] = $section_settings['type'];
+			}
+		}
+
+	}
+
+	return $setting_types;
 }
 
 /**
@@ -1285,7 +1319,8 @@ function edd_checkbox_callback( $args ) {
 	}
 
 	$checked  = ! empty( $edd_option ) ? checked( 1, $edd_option, false ) : '';
-	$html     = '<input type="checkbox" id="edd_settings[' . edd_sanitize_key( $args['id'] ) . ']"' . $name . ' value="1" ' . $checked . '/>';
+	$html     = '<input type="hidden"' . $name . ' value="-1" />';
+	$html    .= '<input type="checkbox" id="edd_settings[' . edd_sanitize_key( $args['id'] ) . ']"' . $name . ' value="1" ' . $checked . '/>';
 	$html    .= '<label for="edd_settings[' . edd_sanitize_key( $args['id'] ) . ']"> '  . wp_kses_post( $args['desc'] ) . '</label>';
 
 	echo apply_filters( 'edd_after_setting_output', $html, $args );
@@ -1306,6 +1341,7 @@ function edd_multicheck_callback( $args ) {
 
 	$html = '';
 	if ( ! empty( $args['options'] ) ) {
+		$html .= '<input type="hidden" name="edd_settings[' . edd_sanitize_key( $args['id'] ) . ']" value="-1" />';
 		foreach( $args['options'] as $key => $option ):
 			if( isset( $edd_option[ $key ] ) ) { $enabled = $option; } else { $enabled = NULL; }
 			$html .= '<input name="edd_settings[' . edd_sanitize_key( $args['id'] ) . '][' . edd_sanitize_key( $key ) . ']" id="edd_settings[' . edd_sanitize_key( $args['id'] ) . '][' . edd_sanitize_key( $key ) . ']" type="checkbox" value="' . esc_attr( $option ) . '" ' . checked($option, $enabled, false) . '/>&nbsp;';
@@ -1328,7 +1364,7 @@ function edd_multicheck_callback( $args ) {
 function edd_payment_icons_callback( $args ) {
 	$edd_option = edd_get_option( $args['id'] );
 
-	$html = '';
+	$html = '<input type="hidden" name="edd_settings[' . edd_sanitize_key( $args['id'] ) . ']" value="-1" />';
 	if ( ! empty( $args['options'] ) ) {
 		foreach( $args['options'] as $key => $option ) {
 
@@ -1356,7 +1392,7 @@ function edd_payment_icons_callback( $args ) {
 
 					} else {
 
-						$image       = edd_locate_template( 'images' . DIRECTORY_SEPARATOR . 'icons' . DIRECTORY_SEPARATOR . $card . '.gif', false );
+						$image       = edd_locate_template( 'images' . DIRECTORY_SEPARATOR . 'icons' . DIRECTORY_SEPARATOR . $card . '.png', false );
 						$content_dir = WP_CONTENT_DIR;
 
 						if( function_exists( 'wp_normalize_path' ) ) {
@@ -1429,7 +1465,7 @@ function edd_radio_callback( $args ) {
 function edd_gateways_callback( $args ) {
 	$edd_option = edd_get_option( $args['id'] );
 
-	$html = '';
+	$html = '<input type="hidden" name="edd_settings[' . edd_sanitize_key( $args['id'] ) . ']" value="-1" />';
 
 	foreach ( $args['options'] as $key => $option ) :
 		if ( isset( $edd_option[ $key ] ) )
@@ -1437,7 +1473,7 @@ function edd_gateways_callback( $args ) {
 		else
 			$enabled = null;
 
-		$html .= '<input name="edd_settings[' . esc_attr( $args['id'] ) . '][' . edd_sanitize_key( $key ) . ']"" id="edd_settings[' . edd_sanitize_key( $args['id'] ) . '][' . edd_sanitize_key( $key ) . ']" type="checkbox" value="1" ' . checked('1', $enabled, false) . '/>&nbsp;';
+		$html .= '<input name="edd_settings[' . esc_attr( $args['id'] ) . '][' . edd_sanitize_key( $key ) . ']" id="edd_settings[' . edd_sanitize_key( $args['id'] ) . '][' . edd_sanitize_key( $key ) . ']" type="checkbox" value="1" ' . checked('1', $enabled, false) . '/>&nbsp;';
 		$html .= '<label for="edd_settings[' . edd_sanitize_key( $args['id'] ) . '][' . edd_sanitize_key( $key ) . ']">' . esc_html( $option['admin_label'] ) . '</label><br/>';
 	endforeach;
 
@@ -2028,9 +2064,21 @@ if ( ! function_exists( 'edd_license_key_callback' ) ) {
 
 						break;
 
+					case 'license_not_activable':
+
+						$class = 'error';
+						$messages[] = __( 'The key you entered belongs to a bundle, please use the product specific license key.', 'easy-digital-downloads' );
+
+						$license_status = 'license-' . $class . '-notice';
+						break;
+
 					default :
 
-						$messages[] = print_r( $license, true );
+						$class = 'error';
+						$error = ! empty(  $license->error ) ?  $license->error : __( 'unknown_error', 'easy-digital-downloads' );
+						$messages[] = sprintf( __( 'There was an error with this license key: %s. Please <a href="%s">contact our support team</a>.', 'easy-digital-downloads' ), $error, 'https://easydigitaldownlaods.com/support' );
+
+						$license_status = 'license-' . $class . '-notice';
 						break;
 				}
 

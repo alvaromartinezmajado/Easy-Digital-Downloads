@@ -58,7 +58,10 @@ function edd_download_shortcode( $atts, $content = null ) {
 	if( ! empty( $atts['sku'] ) ) {
 
 		$download = edd_get_download_by( 'sku', $atts['sku'] );
-		$atts['download_id'] = $download->ID;
+
+		if ( $download ) {
+			$atts['download_id'] = $download->ID;
+		}
 
 	} elseif( isset( $atts['id'] ) ) {
 
@@ -170,17 +173,33 @@ add_shortcode( 'download_cart', 'edd_cart_shortcode' );
  * @return string
  */
 function edd_login_form_shortcode( $atts, $content = null ) {
-	$redirect         = home_url();
-	$purchase_history = edd_get_option( 'purchase_history_page', 0 );
-
-	if ( ! empty( $purchase_history ) ) {
-		$redirect = get_permalink( $purchase_history );
-	}
+	$redirect = '';
 
 	extract( shortcode_atts( array(
 			'redirect' => $redirect
 		), $atts, 'edd_login' )
 	);
+
+	if ( empty( $redirect ) ) {
+		$login_redirect_page = edd_get_option( 'login_redirect_page', '' );
+
+		if ( ! empty( $login_redirect_page ) ) {
+			$redirect = get_permalink( $login_redirect_page );
+		}
+	}
+
+	if ( empty( $redirect ) ) {
+		$purchase_history = edd_get_option( 'purchase_history_page', 0 );
+
+		if ( ! empty( $purchase_history ) ) {
+			$redirect = get_permalink( $purchase_history );
+		}
+	}
+
+	if ( empty( $redirect ) ) {
+		$redirect = home_url();
+	}
+
 	return edd_login_form( $redirect );
 }
 add_shortcode( 'edd_login', 'edd_login_form_shortcode' );
@@ -213,7 +232,7 @@ function edd_register_form_shortcode( $atts, $content = null ) {
 add_shortcode( 'edd_register', 'edd_register_form_shortcode' );
 
 /**
- * Discounts short code
+ * Discounts shortcode
  *
  * Displays a list of all the active discounts. The active discounts can be configured
  * from the Discount Codes admin screen.
